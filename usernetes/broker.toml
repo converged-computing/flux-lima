@@ -1,4 +1,5 @@
 # Flux needs to know the path to the IMP executable
+# THIS IS NO LONGER USED _ it is embedded in the flux-usernetes.yaml
 [exec]
 imp = "/usr/libexec/flux/flux-imp"
 
