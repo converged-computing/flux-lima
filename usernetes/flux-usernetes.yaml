@@ -23,11 +23,12 @@ provision:
 - mode: system
   script: |
     echo "START flux build"
+    export DEBIAN_FRONTEND=noninteractive
     apt-get update
     apt-get install -y apt-transport-https ca-certificates curl clang llvm jq apt-utils wget
     apt-get install -y libelf-dev libpcap-dev libbfd-dev binutils-dev build-essential make 
     apt-get install -y linux-tools-common linux-tools-$(uname -r) 
-    apt-get install -y bpfcc-tools python3-pip git which python3-bpfcc
+    apt-get install -y bpfcc-tools python3-pip git python3-bpfcc
     git clone --recurse-submodules https://github.com/lizrice/learning-ebpf /opt/learning
     cd /opt/learning/libbpf/src
     make install 
@@ -39,8 +40,8 @@ provision:
     curl -s -L https://github.com/Kitware/CMake/releases/download/v$CMAKE/cmake-$CMAKE-linux-x86_64.sh > cmake.sh
     sh cmake.sh --prefix=/usr/local --skip-license
     apt-get install -y man flex ssh sudo vim luarocks munge lcov ccache lua5.2 mpich
-    apt-get install -y valgrind build-essential pkg-config autotools-dev libtool \
-    apt-get install -y libffi-dev autoconf automake make clang-6.0 clang-tidy \
+    apt-get install -y valgrind build-essential pkg-config autotools-dev libtool
+    apt-get install -y libffi-dev autoconf automake make clang clang-tidy
     apt-get install -y gcc g++ libpam-dev apt-utils
     apt-get install -y libsodium-dev libzmq3-dev libczmq-dev libjansson-dev libmunge-dev
     apt-get install -y libncursesw5-dev liblua5.2-dev liblz4-dev libsqlite3-dev uuid-dev
@@ -53,7 +54,7 @@ provision:
     export PATH=/opt/conda/bin:$PATH
     pip install --upgrade --ignore-installed markupsafe coverage cffi ply six pyyaml jsonschema
     pip install --upgrade --ignore-installed sphinx sphinx-rtd-theme sphinxcontrib-spelling
-    apt-get install -y faketime libfaketime pylint cppcheck enchant aspell aspell-en
+    apt-get install -y faketime libfaketime pylint cppcheck aspell aspell-en
     locale-gen en_US.UTF-8
     luarocks install luaposix
     mkdir -p /opt/prrte
@@ -89,7 +90,6 @@ provision:
     cd /opt/flux-sched
     git fetch
     git checkout v0.30.0
-    which cmake
     ./autogen.sh
     PYTHON=/opt/conda/bin/python ./configure --prefix=/usr --sysconfdir=/etc
     make && make install && ldconfig
@@ -195,7 +195,7 @@ provision:
 
     default_port = 8050
     default_bind = "tcp://eth0:%p"
-    default_connect = "tcp://%h:%p"
+    default_connect = "tcp://%h.internal:%p"
 
     # Rank 0 is the TBON parent of all brokers unless explicitly set with
     # parent directives.
@@ -271,7 +271,7 @@ probes:
 - script: |
     #!/bin/bash
     set -eux -o pipefail
-    if ! timeout 1200s bash -c "until test -f /tmp/finished.txt; do sleep 3; done"; then
+    if ! timeout 1200s bash -c "until test -f /tmp/finished.txt; do sleep 10; done"; then
         echo >&2 "build is finished"
         exit 1
     fi

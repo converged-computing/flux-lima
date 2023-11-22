@@ -3,7 +3,8 @@
 We are going to test deploying usernetes with Flux and [Lima](https://lima-vm.io). Instead of having different VMs to start a separate control plane and workers, we are going to have several (identical) VMs that are running Flux, one with a lead broker, and have them connect (to make a Flux instance on a single cluster) and then launch usernetes in the job. Will it work? I have no idea. Let's gooo! For installation instructions of lima see [this top level README.md](../README.md). Note that you also need the special mount type! In the steps below we will:
 
  - [Manual Usernetes](#manual-usernetes): setup Usernetes and Flux separately and run usernetes inside a flux broker instance (done).
-
+ - [Semi-automated Useretes](#semiautomated-usernetes): Started via a batch job in a Flux allocation.
+ 
 Next we will do the same setup, but:
 
 - Write the broker.toml in the VM build (it doesn't have anything changing in it)
@@ -11,8 +12,9 @@ Next we will do the same setup, but:
 
 Note that for the VM builds it doesn't make it to the end, and I'm not sure why. I think I'm just bad with the probes? But the log reports exit code 0 and everything I expect is built, so likely me just being a noob.
 
-
 ## Semi-Automated Usernetes
+
+This approach is semi-automated because we still need to start the flux broker for each node.
 
 ### Nodes
 
@@ -24,49 +26,46 @@ limactl start --network=lima:user-v2 --name=flux-0 ./flux-usernetes.yaml
 limactl start --network=lima:user-v2 --name=flux-1 ./flux-usernetes.yaml
 ```
 
-You should be able to shell into each:
+Note that I get this message 
+
+```
+FATA[0601] did not receive an event with the "running" status 
+```
+
+But can't narrow down the log to find some error that something didn't work! You should be able to shell into each:
 
 ```bash
 limactl shell --workdir /home/vanessa.linux/usernetes flux-0
 limactl shell --workdir /home/vanessa.linux/usernetes flux-1
 ```
 
-and sanity check that:
+#### Sanity Checks
+
+If you choose, here are some sanity checks to ensure that everything started / is working as expected.
 
 ```
-# We have the curve certificate and broker.toml
+# 1. We have the curve certificate and broker.toml
 $ ls /etc/flux/system/
 broker.toml  curve.cert
+```
 
+And feel free to check the content.
+
+```
 # flux is installed (try flux start --test-size=4)
 $ which flux
 /usr/bin/flux
+```
 
+To check hostnames:
+
+```
 # The hostname is lima-flux-0 or lima-flux-1
 $ hostname
 lima-flux-0
 ```
 
-### Network
-
-We need to get the ip addesses for each and update `/etc/hosts`
-
-```
-ip a
-# look for:
-inet 192.168.104.6/24
-```
-
-And then update `/etc/hosts`
-
-```
-sudo su
-vim /etc/hosts
-```
-```
-192.168.104.6  lima-flux-0
-192.168.104.7  lima-flux-1
-```
+And you should be able to reach other hosts via `<hostname>.internal`
 
 ### Bootstrap
 
@@ -87,6 +86,18 @@ Nov 22 04:18:57.865436 sched-fluxion-resource.debug[0]: resource status changed 
 Nov 22 04:18:57.861593 broker.info[1]: quorum-full: quorum->run 0.206754s
 vanessa@lima-flux-0:~/usernetes$ echo $FLUX_URI
 local:///tmp/flux-vI20kb/local-0
+```
+
+You should see two nodes!
+
+```bash
+$ flux resource list
+Nov 22 18:55:37.608721 sched-fluxion-resource.debug[0]: status_request_cb: status succeeded
+Nov 22 18:55:37.608839 sched-fluxion-qmanager.debug[0]: status_request_cb: resource-status succeeded
+     STATE NNODES   NCORES    NGPUS NODELIST
+      free      2        8        0 lima-flux-[0-1]
+ allocated      0        0        0 
+      down      0        0        0 
 ```
 
 And this is where we can test submitting a job that sets up usernetes.
@@ -131,8 +142,6 @@ docker compose down -v
  Volume usernetes_node-opt  Removed
  Volume usernetes_node-var  Removed
  Network usernetes_default  Removed
-docker compose rm
-No stopped containers
 docker compose down -v
  Container usernetes-node-1  Stopping
  Container usernetes-node-1  Stopped
@@ -146,8 +155,6 @@ docker compose down -v
  Volume usernetes_node-var  Removed
  Volume usernetes_node-opt  Removed
  Network usernetes_default  Removed
-docker compose rm
-No stopped containers
 ```
 
 ## Manual Usernetes
@@ -352,21 +359,21 @@ kube-scheduler-u7s-lima-flux-0            1/1     Running   0          91m
 You can stop:
 
 ```bash
-limactl stop control-plane
-limactl stop usernetes-worker
+limactl stop flux-0
+limactl stop flux-1
 ```
 
 I haven't played around with restarting - likely services would need to be restarted, etc.
 If you come back:
 
 ```bash
-limactl start --network=lima:user-v2 control-plane
-limactl start --network=lima:user-v2 usernetes-worker
+limactl start --network=lima:user-v2 flux-0
+limactl start --network=lima:user-v2 flux-1
 ```
 
 or just nuke it!
 
 ```bash
-limactl delete control-plane
-limactl delete usernetes-worker
+limactl delete flux-0
+limactl delete flux-1
 ```

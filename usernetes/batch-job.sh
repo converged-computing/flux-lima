@@ -19,11 +19,11 @@ cat <<EOF | tee /tmp/lima/submit-job.sh
 lead_broker=\${1}
 
 # Each node has already cloned usernetes in home
+rm -rf /tmp/lima/join-command /tmp/lima/done.txt /tmp/lima/join-done.txt
 
 if [[ "\$lead_broker" == \$(hostname) ]]; then
-    echo "I'm the leader, \${lead_broker}"	
+    echo "I'm the leader, \${lead_broker}"
     # TODO shouldn't need shared fs
-    rm -rf /tmp/lima/join-command
     make up
     sleep 10
     make kubeadm-init
@@ -34,23 +34,34 @@ if [[ "\$lead_broker" == \$(hostname) ]]; then
     make join-command
     echo "export KUBECONFIG=\$HOME/kubeconfig" >> ~/.bashrc
     cp ./join-command /tmp/lima/join-command
+    echo "Join command is generated"
+    touch /tmp/lima/done.txt
 else
     echo "I'm a follower, \$(hostname)"
-    sleep 60
+    until [ -f /tmp/lima/done.txt ]
+    do
+        sleep 5
+    done
+    echo "Join command is READY"
     cp /tmp/lima/join-command ./join-command
     make -C ~/usernetes up kubeadm-join || make -C ~/usernetes up kubeadm-join
+    sleep 10
+    touch /tmp/lima/join-done.txt    
 fi
 
 echo "Sleeping a bit..."
-sleep 120
+sleep 30
 if [[ "\$lead_broker" == \$(hostname) ]]; then
-    kubectl get pods
+    echo "Lead broker waiting for join of worker"
+    until [ -f /tmp/lima/join-done.txt ]
+    do
+        sleep 5
+    done
+    kubectl get pods -n kube-system
     kubectl get nodes
 fi
-sleep 60
 # Removes volumes too
 make down-v
-make rm
 EOF
 
 chmod +x /tmp/lima/submit-job.sh
