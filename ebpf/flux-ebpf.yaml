@@ -19,6 +19,7 @@ mounts:
   writable: true
 - location: "/tmp/lima"
   writable: true
+
 provision:
 - mode: system
   script: |
@@ -26,7 +27,7 @@ provision:
     apt-get install -y apt-transport-https ca-certificates curl clang llvm jq apt-utils wget
     apt-get install -y libelf-dev libpcap-dev libbfd-dev binutils-dev build-essential make 
     apt-get install -y linux-tools-common linux-tools-$(uname -r) 
-    apt-get install -y bpfcc-tools python3-pip git which
+    apt-get install -y bpfcc-tools python3-pip git which python3-bpfcc
     git clone --recurse-submodules https://github.com/lizrice/learning-ebpf /opt/learning
     cd /opt/learning/libbpf/src
     make install 
