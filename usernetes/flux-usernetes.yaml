@@ -1,0 +1,250 @@
+# This template requires Lima v0.11.1 or later.
+
+images:
+- location: "https://cloud-images.ubuntu.com/releases/22.04/release/ubuntu-22.04-server-cloudimg-amd64.img"
+  arch: "x86_64"
+- location: "https://cloud-images.ubuntu.com/releases/22.04/release/ubuntu-22.04-server-cloudimg-arm64.img"
+  arch: "aarch64"
+
+# Allow a shared location in /tmp/lima to write into VMs
+mounts:
+- location: "/tmp/lima"
+  writable: true
+
+# virtiofs ensures that the mount is done at the onset so we see the files
+mountType: "virtiofs"
+
+# containerd is managed by k3s, not by Lima, so the values are set to false here.
+containerd:
+  system: false
+  user: false
+
+provision:
+- mode: system
+  script: |
+    echo "START flux build"
+    apt-get update
+    apt-get install -y apt-transport-https ca-certificates curl clang llvm jq apt-utils wget
+    apt-get install -y libelf-dev libpcap-dev libbfd-dev binutils-dev build-essential make 
+    apt-get install -y linux-tools-common linux-tools-$(uname -r) 
+    apt-get install -y bpfcc-tools python3-pip git which python3-bpfcc
+    git clone --recurse-submodules https://github.com/lizrice/learning-ebpf /opt/learning
+    cd /opt/learning/libbpf/src
+    make install 
+    cd /opt
+    git clone --recurse-submodules https://github.com/libbpf/bpftool.git
+    cd bpftool/src
+    make install
+    export CMAKE=3.23.1
+    curl -s -L https://github.com/Kitware/CMake/releases/download/v$CMAKE/cmake-$CMAKE-linux-x86_64.sh > cmake.sh
+    sh cmake.sh --prefix=/usr/local --skip-license
+    apt-get install -y man flex ssh sudo vim luarocks munge lcov ccache lua5.2 mpich
+    apt-get install -y valgrind build-essential pkg-config autotools-dev libtool \
+    apt-get install -y libffi-dev autoconf automake make clang-6.0 clang-tidy \
+    apt-get install -y gcc g++ libpam-dev apt-utils
+    apt-get install -y libsodium-dev libzmq3-dev libczmq-dev libjansson-dev libmunge-dev
+    apt-get install -y libncursesw5-dev liblua5.2-dev liblz4-dev libsqlite3-dev uuid-dev
+    apt-get install -y libhwloc-dev libmpich-dev libs3-dev libevent-dev libarchive-dev
+    apt-get install -y libboost-graph-dev libboost-system-dev libboost-filesystem-dev
+    apt-get install -y libboost-regex-dev libyaml-cpp-dev libedit-dev uidmap dbus-user-session
+
+    curl -L https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-Linux-x86_64.sh > mambaforge.sh
+    bash mambaforge.sh -b -p /opt/conda
+    export PATH=/opt/conda/bin:$PATH
+    pip install --upgrade --ignore-installed markupsafe coverage cffi ply six pyyaml jsonschema
+    pip install --upgrade --ignore-installed sphinx sphinx-rtd-theme sphinxcontrib-spelling
+    apt-get install -y faketime libfaketime pylint cppcheck enchant aspell aspell-en
+    locale-gen en_US.UTF-8
+    luarocks install luaposix
+    mkdir -p /opt/prrte
+    cd /opt/prrte
+    git clone https://github.com/openpmix/openpmix.git
+    git clone https://github.com/openpmix/prrte.git
+    set -x
+    cd openpmix
+    git checkout fefaed568f33bf86f28afb6e45237f1ec5e4de93
+    ./autogen.pl
+    ./configure --prefix=/usr --disable-static && make -j 4 install
+    ldconfig
+    cd /opt/prrte/prrte
+    git checkout 477894f4720d822b15cab56eee7665107832921c
+    ./autogen.pl
+    ./configure --prefix=/usr && make -j 4 install
+    git clone --depth 1 https://github.com/flux-framework/flux-security /opt/flux-security
+    cd /opt/flux-security
+    ./autogen.sh
+    PYTHON=/opt/conda/bin/python ./configure --prefix=/usr --sysconfdir=/etc
+    make && make install
+    mkdir -p /var/run/munge
+    dd if=/dev/urandom bs=1 count=1024 > /etc/munge/munge.key
+    chown -R munge /etc/munge/munge.key /var/run/munge
+    chmod 600 /etc/munge/munge.key
+    git clone https://github.com/flux-framework/flux-core /opt/flux-core
+    cd /opt/flux-core
+    ./autogen.sh
+    PYTHON=/opt/conda/bin/python PYTHON_PREFIX=PYTHON_EXEC_PREFIX=/opt/conda/lib/python3.8/site-packages ./configure --prefix=/usr --sysconfdir=/etc --with-flux-security
+    make clean
+    make && make install
+    git clone https://github.com/flux-framework/flux-sched /opt/flux-sched
+    cd /opt/flux-sched
+    git fetch
+    git checkout v0.30.0
+    which cmake
+    ./autogen.sh
+    PYTHON=/opt/conda/bin/python ./configure --prefix=/usr --sysconfdir=/etc
+    make && make install && ldconfig
+    echo "DONE flux build"
+
+- mode: system
+  script: |
+    #!/bin/bash
+    set -euo pipefail
+    echo "START updating cgroups2"
+    cat /etc/default/grub | grep GRUB_CMDLINE_LINUX=
+    GRUB_CMDLINE_LINUX=""
+    sed -i -e 's/^GRUB_CMDLINE_LINUX=""/GRUB_CMDLINE_LINUX="systemd.unified_cgroup_hierarchy=1"/' /etc/default/grub
+    update-grub
+    mkdir -p /etc/systemd/system/user@.service.d
+    cat <<EOF | tee /etc/systemd/system/user@.service.d/delegate.conf
+    [Service]
+    Delegate=cpu cpuset io memory pids
+    EOF
+    systemctl daemon-reload
+    echo "DONE updating cgroups2"
+
+- mode: system
+  script: |
+    #!/bin/bash
+    set -euo pipefail
+    echo "START updating kernel modules"
+    modprobe ip_tables
+    tee /etc/modules-load.d/usernetes.conf <<EOF >/dev/null
+    br_netfilter
+    vxlan
+    EOF
+    systemctl restart systemd-modules-load.service
+    echo "DONE updating kernel modules"
+
+- mode: system
+  script: |
+    #!/bin/bash
+    set -euo pipefail
+    echo "START 99-usernetes.conf"
+    echo "net.ipv4.conf.default.rp_filter = 2" > /tmp/99-usernetes.conf
+    mv /tmp/99-usernetes.conf /etc/sysctl.d/99-usernetes.conf
+    sysctl --system
+    echo "DONE 99-usernetes.conf"
+
+- mode: system
+  script: |
+    #!/bin/bash
+    set -euo pipefail
+    echo "START modprobe"
+    modprobe vxlan
+    systemctl daemon-reload
+    echo "net.ipv4.conf.default.rp_filter=2" | tee -a /etc/sysctl.conf
+    sysctl -p
+    systemctl daemon-reload
+    echo "DONE modprobe"
+
+- mode: system
+  script: |
+    #!/bin/bash
+    set -euo pipefail
+    echo "START kubectl"
+    cd /tmp
+    curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+    chmod +x ./kubectl
+    mv ./kubectl /usr/bin/kubectl
+    echo "DONE kubectl"
+
+
+- mode: system
+  script: |
+    #!/bin/bash
+    set -eux -o pipefail
+    echo "Installing docker"
+    curl -o install.sh -fsSL https://get.docker.com
+    chmod +x install.sh
+    ./install.sh
+    echo "done installing docker"
+
+# kernel modules
+- mode: system
+  script: |
+    #!/bin/bash
+    set -euo pipefail
+    cd /tmp
+    curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+    chmod +x ./kubectl
+    mv ./kubectl /usr/bin/kubectl
+    
+# This is the setup for the usernetes environment
+# control-plane or worker
+- mode: user
+  script: |
+    #!/bin/bash
+    set -eux -o pipefail
+    echo "Installing docker user"
+    dockerd-rootless-setuptool.sh install
+    echo "Setting up usernetes"
+    echo "export PATH=/usr/bin:$PATH" >> ~/.bashrc
+    echo "export DOCKER_HOST=unix://${XDG_RUNTIME_DIR}/docker.sock" >> ~/.bashrc
+    export PATH=/usr/bin:$PATH
+    export DOCKER_HOST=unix://${XDG_RUNTIME_DIR}/docker.sock
+    sleep 10   
+    loginctl enable-linger $USER
+    systemctl --user enable docker.service
+    systemctl --user start docker.service
+    sudo loginctl enable-linger $(whoami)
+    docker run hello-world
+    git clone https://github.com/rootless-containers/usernetes ~/usernetes
+    cd ~/usernetes
+    echo "Usernetes is in $PWD"
+    sudo loginctl enable-linger $(whoami)
+    loginctl enable-linger $USER
+    echo "Done installing docker user"
+    touch /tmp/finished.txt
+
+# Ensure we have a shared curve certificate
+- mode: system
+  script: |
+    #!/bin/bash
+    set -eux -o pipefail
+    if [[ ! -f "/tmp/lima/curve.cert" ]]; then
+        flux keygen /tmp/lima/curve.cert
+    fi
+    if [[ ! -f "/etc/flux/system/curve.cert" ]]; then
+        mkdir -p /etc/flux/system
+        cp /tmp/lima/curve.cert /etc/flux/system/curve.cert
+    fi
+
+# This will be in a flux job
+#    make up
+#    sleep 10
+#    make kubeadm-init
+#    make install-flannel
+#    sleep 5
+#    make kubeconfig
+#    export KUBECONFIG=$HOME/kubeconfig
+#    kubectl get pods -A
+#    sleep 5
+#    make join-command
+#    echo "export KUBECONFIG=$HOME/kubeconfig" >> ~/.bashrc
+#    sudo loginctl enable-linger $(whoami)
+#    loginctl enable-linger $USER
+
+    
+probes:
+- script: |
+    #!/bin/bash
+    set -eux -o pipefail
+    if ! timeout 1200s bash -c "until test -f /tmp/finished.txt; do sleep 3; done"; then
+        echo >&2 "build is finished"
+        exit 1
+    fi
+  hint: |
+    build is finished.
+
+message: |
+  TODO write a meaningful message here!

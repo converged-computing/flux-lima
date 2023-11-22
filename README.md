@@ -1,9 +1,10 @@
 # Flux Lima
 
-I want to install Flux alongside [Lima](https://lima-vm.io) with tools for tracing (e.g., eBPF) so we can start to see
-what Flux is doing under the hood!
+I want to install Flux alongside [Lima](https://lima-vm.io) with tools for tracing (e.g., eBPF) so we can start to see what Flux is doing under the hood!
 
 ## Install
+
+### Lima
 
 To install I did:
 
@@ -22,40 +23,43 @@ export PATH=$PWD/bin:$PATH
 **Note** that you need [QEMU](https://itsfoss.com/qemu-ubuntu/) installed!
 And note there are instructions for other platforms [here](https://lima-vm.io/docs/installation/)
 
-## Usage
+### Virtio FSD
+
+For having a filesystem that is available on provision we are going to use virtiofsd, but we can't use the default that ships with QEMU (it doesn't work). Instead we will install a rust variant. Note that you'll need the [rust version](https://gitlab.com/virtio-fs/virtiofsd) of virtiofsd for this to work (the old C version with QEMU did not work for me). 
 
 ```bash
-limactl start --network=lima:user-v2 --name=flux-lima ./flux-lima.yaml
+# This is in the PWD
+git clone https://gitlab.com/virtio-fs/virtiofsd 
+cd virtiofsd 
+sudo apt install libcap-ng-dev libseccomp-dev
 ```
 
-It says it doesn't reach running status, but I don't see any errors in the logs, and the shell works:
+Then build with cargo.
 
 ```bash
-limactl shell flux-lima
-export PATH=/opt/conda/bin:$PATH
+cargo build --release
 ```
 
-And then try flux!
+Then I replaced it.
 
 ```bash
-export PATH=/opt/conda/bin:$PATH
-$ flux start --test-size=4
-$ flux run hostname
-lima-flux-lima
+sudo mv /usr/lib/qemu/virtiofsd /usr/lib/qemu/virtiofsd-c
+sudo mv virtiofsd/target/release/virtiofsd /usr/lib/qemu/virtiofsd
 ```
 
-Woop!
-
-## Clean Up
-
-You can stop:
+I also did:
 
 ```bash
-limactl stop flux-lima
+sudo usermod -aG kvm $USER
 ```
 
-or just nuke it!
+You can then copy assets into `/tmp/lima` and the VMs that are using that mount will have access there on
+startup.
 
-```bash
-limactl delete flux-lima
-```
+
+## Recipes
+
+The following recipes are included:
+
+ - [flux-ebpf](flux-ebpf): Flux installed alongside eBPF for testing / fun.
+ - [usernetes](usernetes): Flux installed and then running usernetes as a job.
