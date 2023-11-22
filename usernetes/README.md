@@ -2,9 +2,7 @@
 
 We are going to test deploying usernetes with Flux and [Lima](https://lima-vm.io). Instead of having different VMs to start a separate control plane and workers, we are going to have several (identical) VMs that are running Flux, one with a lead broker, and have them connect (to make a Flux instance on a single cluster) and then launch usernetes in the job. Will it work? I have no idea. Let's gooo! For installation instructions of lima see [this top level README.md](../README.md). Note that you also need the special mount type! In the steps below we will:
 
- - [Setup](#setup) a shared volume with a flux configuration file (TBA will be written into the VM startup)
- - Nodes
-   - [Manual Usernetes](#manual-usernetes): setup Usernetes and Flux separately and run usernetes inside a flux broker instance (done).
+ - [Manual Usernetes](#manual-usernetes): setup Usernetes and Flux separately and run usernetes inside a flux broker instance (done).
 
 Next we will do the same setup, but:
 
@@ -13,26 +11,153 @@ Next we will do the same setup, but:
 
 Note that for the VM builds it doesn't make it to the end, and I'm not sure why. I think I'm just bad with the probes? But the log reports exit code 0 and everything I expect is built, so likely me just being a noob.
 
-## Setup
 
-Copy the broker.toml into /tmp/lima
+## Semi-Automated Usernetes
+
+### Nodes
+
+Create two instances. If you create more than 2, you'll need to edit the [flux-usernetes.yaml](flux-usernetes.yaml)
+hosts list.
 
 ```bash
-cp broker.toml /tmp/lima/broker.toml
+limactl start --network=lima:user-v2 --name=flux-0 ./flux-usernetes.yaml
+limactl start --network=lima:user-v2 --name=flux-1 ./flux-usernetes.yaml
 ```
 
-After creating the nodes you'll need to update the hostnames of each in /etc/hosts to refer to the corresponding hostname, e.g.,
+You should be able to shell into each:
 
-```console
+```bash
+limactl shell --workdir /home/vanessa.linux/usernetes flux-0
+limactl shell --workdir /home/vanessa.linux/usernetes flux-1
+```
+
+and sanity check that:
+
+```
+# We have the curve certificate and broker.toml
+$ ls /etc/flux/system/
+broker.toml  curve.cert
+
+# flux is installed (try flux start --test-size=4)
+$ which flux
+/usr/bin/flux
+
+# The hostname is lima-flux-0 or lima-flux-1
+$ hostname
+lima-flux-0
+```
+
+### Network
+
+We need to get the ip addesses for each and update `/etc/hosts`
+
+```
+ip a
+# look for:
+inet 192.168.104.6/24
+```
+
+And then update `/etc/hosts`
+
+```
+sudo su
+vim /etc/hosts
+```
+```
 192.168.104.6  lima-flux-0
 192.168.104.7  lima-flux-1
 ```
 
-## Nodes
+### Bootstrap
 
-### Manual Usernetes
+Start the broker on each (in different terminals)
 
-Let's manually create two nodes to start (you can run these in separate terminals)
+```bash
+command="flux broker --config-path /etc/flux/system/broker.toml -Stbon.fanout=256 -Slog-stderr-level=7"
+limactl shell --workdir /home/vanessa.linux/usernetes flux-0 $command
+limactl shell --workdir /home/vanessa.linux/usernetes flux-1 $command
+```
+
+The first terminal (after the second follower connects) should shell into an interactive
+session.
+
+```bash
+Nov 22 04:18:57.864857 resource.debug[0]: reslog_cb: online event posted
+Nov 22 04:18:57.865436 sched-fluxion-resource.debug[0]: resource status changed (rankset=[1] status=UP)
+Nov 22 04:18:57.861593 broker.info[1]: quorum-full: quorum->run 0.206754s
+vanessa@lima-flux-0:~/usernetes$ echo $FLUX_URI
+local:///tmp/flux-vI20kb/local-0
+```
+
+And this is where we can test submitting a job that sets up usernetes.
+
+### Batch Job with Usernetes
+
+You can write the contents of [batch-job.sh](batch-job.sh) into your interactive broker shell (in flux-0)
+and submit:
+
+```bash
+flux batch -N 2 batch-job.sh
+```
+
+And you can watch `usernetes-job.out` to see that we list nodes.
+Note that the join-command is a bit fussy, I find that sometimes it tells me containerd is not started.
+We might need to work on the timing for that (it is currently my best guess).
+If it works, you should see full nodes:
+
+```console
+...
+make: Leaving directory '/home/vanessa.linux/usernetes'
+Sleeping a bit...
+No resources found in default namespace.
+NAME              STATUS   ROLES           AGE     VERSION
+u7s-lima-flux-0   Ready    control-plane   2m10s   v1.28.0
+u7s-lima-flux-1   Ready    <none>          106s    v1.28.0
+```
+
+When it's done running, the volumes and containers will clean up. You're done!
+
+```console
+docker compose down -v
+ Container usernetes-node-1  Stopping
+ Container usernetes-node-1  Stopped
+ Container usernetes-node-1  Removing
+ Container usernetes-node-1  Removed
+ Volume usernetes_node-etc  Removing
+ Volume usernetes_node-var  Removing
+ Volume usernetes_node-opt  Removing
+ Network usernetes_default  Removing
+ Volume usernetes_node-etc  Removed
+ Volume usernetes_node-opt  Removed
+ Volume usernetes_node-var  Removed
+ Network usernetes_default  Removed
+docker compose rm
+No stopped containers
+docker compose down -v
+ Container usernetes-node-1  Stopping
+ Container usernetes-node-1  Stopped
+ Container usernetes-node-1  Removing
+ Container usernetes-node-1  Removed
+ Volume usernetes_node-etc  Removing
+ Volume usernetes_node-opt  Removing
+ Volume usernetes_node-var  Removing
+ Network usernetes_default  Removing
+ Volume usernetes_node-etc  Removed
+ Volume usernetes_node-var  Removed
+ Volume usernetes_node-opt  Removed
+ Network usernetes_default  Removed
+docker compose rm
+No stopped containers
+```
+
+## Manual Usernetes
+
+> This is no longer being used in favor of automated usernetes
+
+Let's manually create two nodes to start (you can run these in separate terminals).
+The index 0 (flux-0) will be the lead broker, and flux-1 a follower. These correspond
+to hostnames lima-flux-0 and lima-flux-1, and each has their own IP address that we will 
+need to derive for `/etc/hosts` in each VM.
 
 ```bash
 limactl start --network=lima:user-v2 --name=flux-0 ./flux-usernetes.yaml

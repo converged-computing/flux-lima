@@ -169,6 +169,48 @@ provision:
     ./install.sh
     echo "done installing docker"
 
+# broker.toml
+- mode: system
+  script: |
+    #!/bin/bash
+    set -euo pipefail
+    echo "START broker.toml"
+    mkdir -p /etc/flux/system
+    cat <<EOF | tee /etc/flux/system/broker.toml
+    # Flux needs to know the path to the IMP executable
+    [exec]
+    imp = "/usr/libexec/flux/flux-imp"
+
+    # Allow users other than the instance owner (guests) to connect to Flux
+    # Optionally, root may be given "owner privileges" for convenience
+    [access]
+    allow-guest-user = true
+    allow-root-owner = true
+
+    # Point to shared network certificate generated flux-keygen(1).
+    # Define the network endpoints for Flux's tree based overlay network
+    # and inform Flux of the hostnames that will start flux-broker(1).
+    [bootstrap]
+    curve_cert = "/etc/flux/system/curve.cert"
+
+    default_port = 8050
+    default_bind = "tcp://eth0:%p"
+    default_connect = "tcp://%h:%p"
+
+    # Rank 0 is the TBON parent of all brokers unless explicitly set with
+    # parent directives.
+    # The actual ip addresses (for both) need to be added to /etc/hosts
+    # of each VM for now.
+    hosts = [
+       { host = "lima-flux-[0-1]" },
+    ]
+    # Speed up detection of crashed network peers (system default is around 20m)
+    [tbon]
+    tcp_user_timeout = "2m"
+    EOF
+    cat /etc/flux/system/broker.toml
+    echo "DONE broker.toml"
+
 # kernel modules
 - mode: system
   script: |
@@ -204,7 +246,6 @@ provision:
     sudo loginctl enable-linger $(whoami)
     loginctl enable-linger $USER
     echo "Done installing docker user"
-    touch /tmp/finished.txt
 
 # Ensure we have a shared curve certificate
 - mode: system
@@ -219,22 +260,13 @@ provision:
         cp /tmp/lima/curve.cert /etc/flux/system/curve.cert
     fi
 
-# This will be in a flux job
-#    make up
-#    sleep 10
-#    make kubeadm-init
-#    make install-flannel
-#    sleep 5
-#    make kubeconfig
-#    export KUBECONFIG=$HOME/kubeconfig
-#    kubectl get pods -A
-#    sleep 5
-#    make join-command
-#    echo "export KUBECONFIG=$HOME/kubeconfig" >> ~/.bashrc
-#    sudo loginctl enable-linger $(whoami)
-#    loginctl enable-linger $USER
+- mode: user
+  script: |
+    #!/bin/bash
+    set -eux -o pipefail
+    sudo chown $USER /etc/flux/system/curve.cert
+    touch /tmp/finished.txt
 
-    
 probes:
 - script: |
     #!/bin/bash
@@ -247,4 +279,4 @@ probes:
     build is finished.
 
 message: |
-  TODO write a meaningful message here!
+  The flux instance is done building. Next, shell in, update /etc/hosts with hostnames, and start a broker.
