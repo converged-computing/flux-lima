@@ -19,7 +19,7 @@ cat <<EOF | tee /tmp/lima/submit-job.sh
 lead_broker=\${1}
 
 # Each node has already cloned usernetes in home
-rm -rf /tmp/lima/join-command /tmp/lima/done.txt /tmp/lima/join-done.txt
+rm -rf /tmp/lima/join-command /tmp/lima/done.txt /tmp/lima/join-done.txt /tmp/lima/work-done.txt
 
 if [[ "\$lead_broker" == \$(hostname) ]]; then
     echo "I'm the leader, \${lead_broker}"
@@ -45,7 +45,7 @@ else
     echo "Join command is READY"
     cp /tmp/lima/join-command ./join-command
     make -C ~/usernetes up kubeadm-join || make -C ~/usernetes up kubeadm-join
-    sleep 10
+    sleep 30
     touch /tmp/lima/join-done.txt    
 fi
 
@@ -59,15 +59,24 @@ if [[ "\$lead_broker" == \$(hostname) ]]; then
     done
     kubectl get pods -n kube-system
     kubectl get nodes
+    kubectl describe nodes u7s-lima-flux-1
 fi
-# Removes volumes too
-make down-v
+
+function cleanup()
+{
+    echo "Cleaning up"
+    # Removes volumes too
+    make down-v &
+}
+
+trap cleanup EXIT
+# When the script exits we can run the cleanup
+sleep infinity
 EOF
 
 chmod +x /tmp/lima/submit-job.sh
 
-# Assume still submit to 2 nodes
-ls
 # Write output and error to the same file to preserve order
 flux submit -N 2 --watch --error ./usernetes-job.out --output ./usernetes-job.out /tmp/lima/submit-job.sh "${lead_broker}"
-echo "Stick a fork in me"  
+rm -rf /tmp/lima/join-command /tmp/lima/done.txt /tmp/lima/join-done.txt
+echo "Stick a fork in me"

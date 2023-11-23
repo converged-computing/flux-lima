@@ -11,8 +11,13 @@ mounts:
 - location: "/tmp/lima"
   writable: true
 
+# See https://github.com/lima-vm/lima/blob/master/examples/default.yaml
 # virtiofs ensures that the mount is done at the onset so we see the files
 mountType: "virtiofs"
+
+# Disk size - I increased to allow pulling more containers
+# Builtin default: "100GiB"
+disk: "250GiB"
 
 # containerd is managed by k3s, not by Lima, so the values are set to false here.
 containerd:
@@ -48,7 +53,6 @@ provision:
     apt-get install -y libhwloc-dev libmpich-dev libs3-dev libevent-dev libarchive-dev
     apt-get install -y libboost-graph-dev libboost-system-dev libboost-filesystem-dev
     apt-get install -y libboost-regex-dev libyaml-cpp-dev libedit-dev uidmap dbus-user-session
-
     curl -L https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-Linux-x86_64.sh > mambaforge.sh
     bash mambaforge.sh -b -p /opt/conda
     export PATH=/opt/conda/bin:$PATH
@@ -158,7 +162,6 @@ provision:
     mv ./kubectl /usr/bin/kubectl
     echo "DONE kubectl"
 
-
 - mode: system
   script: |
     #!/bin/bash
@@ -210,16 +213,6 @@ provision:
     EOF
     cat /etc/flux/system/broker.toml
     echo "DONE broker.toml"
-
-# kernel modules
-- mode: system
-  script: |
-    #!/bin/bash
-    set -euo pipefail
-    cd /tmp
-    curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-    chmod +x ./kubectl
-    mv ./kubectl /usr/bin/kubectl
     
 # This is the setup for the usernetes environment
 # control-plane or worker
@@ -247,6 +240,7 @@ provision:
     loginctl enable-linger $USER
     echo "Done installing docker user"
 
+
 # Ensure we have a shared curve certificate
 - mode: system
   script: |
@@ -271,12 +265,10 @@ probes:
 - script: |
     #!/bin/bash
     set -eux -o pipefail
-    if ! timeout 1200s bash -c "until test -f /tmp/finished.txt; do sleep 10; done"; then
-        echo >&2 "build is finished"
-        exit 1
-    fi
-  hint: |
-    build is finished.
+    until [ -f /tmp/finnished.txt ]
+    do
+        sleep 15
+    done
 
 message: |
-  The flux instance is done building. Next, shell in, update /etc/hosts with hostnames, and start a broker.
+  The flux instance is done building. Next, start all brokers and submit jobs.
