@@ -491,7 +491,169 @@ broker.info[0]: goodbye: goodbye->exit 0.043608ms
 </details>
 
 I can't believe that worked! Amazing!
-More examples will be added soon.
+Since we have a tiny set of resources, let's cleanup when we are done.
+
+```bash
+kubectl delete -f https://raw.githubusercontent.com/flux-framework/flux-operator/main/examples/dist/flux-operator.yaml
+```
+
+#### Pytorch Operator
+
+Let's install the [Kubeflow training operator](https://github.com/kubeflow/training-operator) to try submitting
+a pytorch machine learning job.
+
+```bash
+kubectl apply -k "github.com/kubeflow/training-operator/manifests/overlays/standalone?ref=v1.5.0"
+```
+
+Save this yaml as pytorch.yaml:
+
+```yaml
+apiVersion: "kubeflow.org/v1"
+kind: "PyTorchJob"
+metadata:
+  name: "pytorch-dist-mnist-gloo"
+spec:
+  pytorchReplicaSpecs:
+    Master:
+      replicas: 1
+      restartPolicy: OnFailure
+      template:
+        metadata:
+          annotations:
+            sidecar.istio.io/inject: "false"
+        spec:
+          containers:
+            - name: pytorch
+              image: docker.io/kubeflowkatib/pytorch-mnist-cpu:latest
+              args: ["--backend", "gloo"]
+    Worker:
+      replicas: 1
+      restartPolicy: OnFailure
+      template:
+        metadata:
+          annotations:
+            sidecar.istio.io/inject: "false"
+        spec:
+          containers: 
+            - name: pytorch
+              image: docker.io/kubeflowkatib/pytorch-mnist-cpu:latest
+              args: ["--backend", "gloo"]
+```
+
+Save to pytorch.yaml and apply:
+
+```bash
+kubectl apply -f pytorch.yaml
+```
+
+And check out the model running!
+
+<details>
+
+<summary>Mnist output</summary>
+
+```console
+$ kubectl logs pytorch-dist-mnist-gloo-master-0 -f
+2023-11-23T21:59:01Z INFO     Added key: store_based_barrier_key:1 to store for rank: 0
+2023-11-23T21:59:01Z INFO     Rank 0: Completed store-based barrier for key:store_based_barrier_key:1 with 2 nodes.
+100.0%
+100.0%
+100.0%
+100.0%
+/usr/local/lib/python3.10/site-packages/torch/nn/parallel/__init__.py:12: UserWarning: torch.nn.parallel.DistributedDataParallelCPU is deprecated, please use torch.nn.parallel.DistributedDataParallel instead.
+  warnings.warn("torch.nn.parallel.DistributedDataParallelCPU is deprecated, "
+2023-11-23T21:59:11Z INFO     Train Epoch: 1 [0/60000 (0%)]	loss=2.2980
+2023-11-23T21:59:11Z INFO     Reducer buckets have been rebuilt in this iteration.
+2023-11-23T21:59:12Z INFO     Train Epoch: 1 [640/60000 (1%)]	loss=2.3059
+2023-11-23T21:59:13Z INFO     Train Epoch: 1 [1280/60000 (2%)]	loss=2.2698
+2023-11-23T21:59:14Z INFO     Train Epoch: 1 [1920/60000 (3%)]	loss=2.2623
+2023-11-23T21:59:16Z INFO     Train Epoch: 1 [2560/60000 (4%)]	loss=2.2693
+2023-11-23T21:59:17Z INFO     Train Epoch: 1 [3200/60000 (5%)]	loss=2.2677
+2023-11-23T21:59:19Z INFO     Train Epoch: 1 [3840/60000 (6%)]	loss=2.2156
+2023-11-23T21:59:22Z INFO     Train Epoch: 1 [4480/60000 (7%)]	loss=2.1947
+2023-11-23T21:59:23Z INFO     Train Epoch: 1 [5120/60000 (9%)]	loss=2.1869
+2023-11-23T21:59:25Z INFO     Train Epoch: 1 [5760/60000 (10%)]	loss=2.1378
+2023-11-23T21:59:26Z INFO     Train Epoch: 1 [6400/60000 (11%)]	loss=2.0358
+2023-11-23T21:59:28Z INFO     Train Epoch: 1 [7040/60000 (12%)]	loss=1.9699
+2023-11-23T21:59:31Z INFO     Train Epoch: 1 [7680/60000 (13%)]	loss=1.8555
+2023-11-23T21:59:32Z INFO     Train Epoch: 1 [8320/60000 (14%)]	loss=1.5440
+2023-11-23T21:59:33Z INFO     Train Epoch: 1 [8960/60000 (15%)]	loss=1.3375
+2023-11-23T21:59:35Z INFO     Train Epoch: 1 [9600/60000 (16%)]	loss=1.1917
+2023-11-23T21:59:37Z INFO     Train Epoch: 1 [10240/60000 (17%)]	loss=1.2503
+2023-11-23T21:59:38Z INFO     Train Epoch: 1 [10880/60000 (18%)]	loss=1.0592
+2023-11-23T21:59:40Z INFO     Train Epoch: 1 [11520/60000 (19%)]	loss=1.1549
+2023-11-23T21:59:41Z INFO     Train Epoch: 1 [12160/60000 (20%)]	loss=1.1678
+2023-11-23T21:59:42Z INFO     Train Epoch: 1 [12800/60000 (21%)]	loss=0.9152
+2023-11-23T21:59:44Z INFO     Train Epoch: 1 [13440/60000 (22%)]	loss=1.1466
+2023-11-23T21:59:45Z INFO     Train Epoch: 1 [14080/60000 (23%)]	loss=0.9987
+2023-11-23T21:59:46Z INFO     Train Epoch: 1 [14720/60000 (25%)]	loss=0.8237
+2023-11-23T21:59:48Z INFO     Train Epoch: 1 [15360/60000 (26%)]	loss=0.9158
+2023-11-23T21:59:49Z INFO     Train Epoch: 1 [16000/60000 (27%)]	loss=0.9389
+2023-11-23T21:59:51Z INFO     Train Epoch: 1 [16640/60000 (28%)]	loss=1.0364
+2023-11-23T21:59:52Z INFO     Train Epoch: 1 [17280/60000 (29%)]	loss=0.9512
+2023-11-23T21:59:54Z INFO     Train Epoch: 1 [17920/60000 (30%)]	loss=1.0208
+2023-11-23T21:59:56Z INFO     Train Epoch: 1 [18560/60000 (31%)]	loss=1.0480
+2023-11-23T21:59:58Z INFO     Train Epoch: 1 [19200/60000 (32%)]	loss=0.8931
+2023-11-23T21:59:59Z INFO     Train Epoch: 1 [19840/60000 (33%)]	loss=0.8314
+2023-11-23T22:00:01Z INFO     Train Epoch: 1 [20480/60000 (34%)]	loss=0.7959
+2023-11-23T22:00:02Z INFO     Train Epoch: 1 [21120/60000 (35%)]	loss=0.8931
+2023-11-23T22:00:03Z INFO     Train Epoch: 1 [21760/60000 (36%)]	loss=0.8445
+2023-11-23T22:00:05Z INFO     Train Epoch: 1 [22400/60000 (37%)]	loss=0.8577
+2023-11-23T22:00:07Z INFO     Train Epoch: 1 [23040/60000 (38%)]	loss=0.8272
+2023-11-23T22:00:08Z INFO     Train Epoch: 1 [23680/60000 (39%)]	loss=1.0768
+2023-11-23T22:00:10Z INFO     Train Epoch: 1 [24320/60000 (41%)]	loss=0.9333
+2023-11-23T22:00:12Z INFO     Train Epoch: 1 [24960/60000 (42%)]	loss=0.8143
+2023-11-23T22:00:13Z INFO     Train Epoch: 1 [25600/60000 (43%)]	loss=0.7880
+2023-11-23T22:00:15Z INFO     Train Epoch: 1 [26240/60000 (44%)]	loss=0.7469
+2023-11-23T22:00:16Z INFO     Train Epoch: 1 [26880/60000 (45%)]	loss=0.8006
+2023-11-23T22:00:18Z INFO     Train Epoch: 1 [27520/60000 (46%)]	loss=0.7839
+2023-11-23T22:00:19Z INFO     Train Epoch: 1 [28160/60000 (47%)]	loss=1.0564
+2023-11-23T22:00:21Z INFO     Train Epoch: 1 [28800/60000 (48%)]	loss=0.8097
+2023-11-23T22:00:22Z INFO     Train Epoch: 1 [29440/60000 (49%)]	loss=0.6554
+2023-11-23T22:00:23Z INFO     Train Epoch: 1 [30080/60000 (50%)]	loss=0.8464
+2023-11-23T22:00:25Z INFO     Train Epoch: 1 [30720/60000 (51%)]	loss=0.5195
+2023-11-23T22:00:26Z INFO     Train Epoch: 1 [31360/60000 (52%)]	loss=0.8303
+
+...
+
+2023-11-23T22:23:40Z INFO     Train Epoch: 10 [53760/60000 (90%)]	loss=0.2748
+2023-11-23T22:23:42Z INFO     Train Epoch: 10 [54400/60000 (91%)]	loss=0.5284
+2023-11-23T22:23:43Z INFO     Train Epoch: 10 [55040/60000 (92%)]	loss=0.2992
+2023-11-23T22:23:45Z INFO     Train Epoch: 10 [55680/60000 (93%)]	loss=0.2807
+2023-11-23T22:23:47Z INFO     Train Epoch: 10 [56320/60000 (94%)]	loss=0.2427
+2023-11-23T22:23:48Z INFO     Train Epoch: 10 [56960/60000 (95%)]	loss=0.1792
+2023-11-23T22:23:49Z INFO     Train Epoch: 10 [57600/60000 (96%)]	loss=0.3599
+2023-11-23T22:23:51Z INFO     Train Epoch: 10 [58240/60000 (97%)]	loss=0.3039
+2023-11-23T22:23:52Z INFO     Train Epoch: 10 [58880/60000 (98%)]	loss=0.2242
+2023-11-23T22:23:54Z INFO     Train Epoch: 10 [59520/60000 (99%)]	loss=0.3991
+2023-11-23T22:23:58Z INFO     {metricName: accuracy, metricValue: 0.8710};{metricName: loss, metricValue: 0.3519}
+
+Using distributed PyTorch with gloo backend
+Downloading http://fashion-mnist.s3-website.eu-central-1.amazonaws.com/train-images-idx3-ubyte.gz
+Downloading http://fashion-mnist.s3-website.eu-central-1.amazonaws.com/train-images-idx3-ubyte.gz to ./data/FashionMNIST/raw/train-images-idx3-ubyte.gz
+Extracting ./data/FashionMNIST/raw/train-images-idx3-ubyte.gz to ./data/FashionMNIST/raw
+
+Downloading http://fashion-mnist.s3-website.eu-central-1.amazonaws.com/train-labels-idx1-ubyte.gz
+Downloading http://fashion-mnist.s3-website.eu-central-1.amazonaws.com/train-labels-idx1-ubyte.gz to ./data/FashionMNIST/raw/train-labels-idx1-ubyte.gz
+Extracting ./data/FashionMNIST/raw/train-labels-idx1-ubyte.gz to ./data/FashionMNIST/raw
+
+Downloading http://fashion-mnist.s3-website.eu-central-1.amazonaws.com/t10k-images-idx3-ubyte.gz
+Downloading http://fashion-mnist.s3-website.eu-central-1.amazonaws.com/t10k-images-idx3-ubyte.gz to ./data/FashionMNIST/raw/t10k-images-idx3-ubyte.gz
+Extracting ./data/FashionMNIST/raw/t10k-images-idx3-ubyte.gz to ./data/FashionMNIST/raw
+
+Downloading http://fashion-mnist.s3-website.eu-central-1.amazonaws.com/t10k-labels-idx1-ubyte.gz
+Downloading http://fashion-mnist.s3-website.eu-central-1.amazonaws.com/t10k-labels-idx1-ubyte.gz to ./data/FashionMNIST/raw/t10k-labels-idx1-ubyte.gz
+Extracting ./data/FashionMNIST/raw/t10k-labels-idx1-ubyte.gz to ./data/FashionMNIST/raw
+```
+
+So awesome! 🦃️
+
+</details>
+
+
+Note that I tried examples with more pods, and ran into [this issue](https://github.com/rootless-containers/usernetes/issues/311).
+Likely if/when we want to scale we should consider this.
 
 
 ## Manual Usernetes
