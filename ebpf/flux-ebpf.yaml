@@ -62,7 +62,7 @@ provision:
     export PATH=/opt/conda/bin:$PATH
     pip install --upgrade --ignore-installed markupsafe coverage cffi ply six pyyaml jsonschema
     pip install --upgrade --ignore-installed sphinx sphinx-rtd-theme sphinxcontrib-spelling
-    apt-get install -y faketime libfaketime pylint cppcheck enchant aspell aspell-en python3-bcc
+    apt-get install -y faketime libfaketime pylint cppcheck aspell aspell-en python3-bpfcc
     locale-gen en_US.UTF-8
     luarocks install luaposix
     echo "deb [trusted=yes] https://repo.iovisor.org/apt/xenial xenial-nightly main" | sudo tee /etc/apt/sources.list.d/iovisor.list
@@ -125,7 +125,7 @@ probes:
 - script: |
     #!/bin/bash
     set -eux -o pipefail
-    if ! timeout 30s bash -c "until test -f /tmp/finished.txt; do sleep 3; done"; then
+    if ! timeout 600s bash -c "until test -f /tmp/finished.txt; do sleep 10; done"; then
             echo >&2 "flux build is not finished yet"
             exit 1
     else
