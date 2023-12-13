@@ -265,7 +265,7 @@ probes:
 - script: |
     #!/bin/bash
     set -eux -o pipefail
-    until [ -f /tmp/finnished.txt ]
+    until [ -f /tmp/finished.txt ]
     do
         sleep 15
     done

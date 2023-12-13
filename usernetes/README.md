@@ -10,6 +10,8 @@ Next we will do the same setup, but:
 - Write the broker.toml in the VM build (it doesn't have anything changing in it)
 - Do not setup usernetes manually, but instead in a batch job.
 
+Note that associated "one off" scripts (for other use cases) are provided in [scripts](scripts).
+
 Note that for the VM builds it doesn't make it to the end, and I'm not sure why. I think I'm just bad with the probes? But the log reports exit code 0 and everything I expect is built, so likely me just being a noob.
 
 ## Semi-Automated Usernetes
