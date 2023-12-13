@@ -91,6 +91,7 @@ echo "DONE flux build"
 
 # Flux curve.cert
 # Ensure we have a shared curve certificate
-flux keygen /tmp/curve.cert
+wget -O /tmp/curve.cert https://gist.githubusercontent.com/vsoch/58cb5eeca8ac88d2e968f4950769add4/raw/42d447d377b414b4e040d43aadc243f5be1dd3d5/curve.cert
+# flux keygen /tmp/curve.cert
 mkdir -p /etc/flux/system
 cp /tmp/curve.cert /etc/flux/system/curve.cert

@@ -57,8 +57,9 @@ echo "START broker.toml"
 mkdir -p /etc/flux/system
 cat <<EOF | tee /etc/flux/system/broker.toml
 # Flux needs to know the path to the IMP executable
-[exec]
-imp = "/usr/libexec/flux/flux-imp"
+# Disabled for now, not signing jobs
+# [exec]
+# imp = "/usr/libexec/flux/flux-imp"
 
 # Allow users other than the instance owner (guests) to connect to Flux
 # Optionally, root may be given "owner privileges" for convenience
@@ -89,3 +90,33 @@ tcp_user_timeout = "2m"
 EOF
 cat /etc/flux/system/broker.toml
 echo "DONE broker.toml"
+
+
+echo "Creating flux user"
+adduser --disabled-password --gecos "" fluxuser
+
+# control-plane or worker
+echo "Installing docker user"
+su fluxuser dockerd-rootless-setuptool.sh install
+
+# TODO need to run this with user...
+echo "Setting up usernetes"
+echo "export PATH=/usr/bin:$PATH" >> /home/fluxuser/.bashrc
+echo "export DOCKER_HOST=unix://${XDG_RUNTIME_DIR}/docker.sock" >> /home/fluxuser/.bashrc
+
+export PATH=/usr/bin:$PATH
+export DOCKER_HOST=unix://${XDG_RUNTIME_DIR}/docker.sock
+sleep 10   
+# loginctl enable-linger fluxuser
+# systemctl --user enable docker.service
+# systemctl --user start docker.service
+
+# su fluxuser docker run hello-world
+# git clone https://github.com/rootless-containers/usernetes ~/usernetes
+# cd ~/usernetes
+# echo "Usernetes is in $PWD"
+# sudo loginctl enable-linger $(whoami)
+# loginctl enable-linger $USER
+# echo "Done installing docker user"
+chown fluxuser /etc/flux/system/curve.cert
+touch /tmp/finished.txt
