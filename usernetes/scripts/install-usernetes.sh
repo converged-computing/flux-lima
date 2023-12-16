@@ -109,6 +109,8 @@ loginctl enable-linger fluxuser
 apt install -y systemd-container
 
 # This is an attempt to run a bunch of stuff as the fluxuser
+# Be careful with envars here, they would need to be escaped
+# otherwise they are evaluated in root's environment
 cat <<EOF | tee /home/fluxuser/docker-user-setup.sh
 #!/bin/bash
 ls /var/lib/systemd/linger

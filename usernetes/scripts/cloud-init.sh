@@ -9,5 +9,5 @@ wget https://raw.githubusercontent.com/converged-computing/flux-lima/main/userne
 wget https://raw.githubusercontent.com/converged-computing/flux-lima/main/usernetes/scripts/install-usernetes.sh
 chmod +x ./install-flux.sh
 chmod +x ./install-usernetes.sh
-/bin/bash ./install-flux.sh >> /tmp/install-flux.out 2>&1
-/bin/bash ./install-usernetes.sh >> /tmp/install-usernetes.out 2>&1
+/bin/bash ./install-flux.sh
+/bin/bash ./install-usernetes.sh
