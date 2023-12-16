@@ -101,27 +101,35 @@ adduser --disabled-password --gecos "" fluxuser
 echo "DenyUsers fluxuser" >> /etc/ssh/sshd_config
 systemctl restart sshd
 
-echo "Installing docker user"
-su fluxuser dockerd-rootless-setuptool.sh install
-
-# TODO need to run this with user...
 echo "Setting up usernetes"
 echo "export PATH=/usr/bin:$PATH" >> /home/fluxuser/.bashrc
-echo "export DOCKER_HOST=unix://${XDG_RUNTIME_DIR}/docker.sock" >> /home/fluxuser/.bashrc
+echo "export XDG_RUNTIME_DIR=/home/fluxuser/.docker/run" >> /home/fluxuser/.bashrc
+echo "export DOCKER_HOST=unix:///home/fluxuser/.docker/run/docker.sock" >> /home/fluxuser/.bashrc
+sleep 10
 
-export PATH=/usr/bin:$PATH
-export DOCKER_HOST=unix://${XDG_RUNTIME_DIR}/docker.sock
-sleep 10   
-# loginctl enable-linger fluxuser
-# systemctl --user enable docker.service
-# systemctl --user start docker.service
+echo "Installing docker user"
 
-# su fluxuser docker run hello-world
-# git clone https://github.com/rootless-containers/usernetes ~/usernetes
-# cd ~/usernetes
-# echo "Usernetes is in $PWD"
-# sudo loginctl enable-linger $(whoami)
-# loginctl enable-linger $USER
-# echo "Done installing docker user"
+# This is an attempt to run a bunch of stuff as the fluxuser
+cat <<EOF | tee docker-user-setup.sh
+#!/bin/bash
+loginctl enable-linger fluxuser
+. /home/fluxuser/.bashrc
+dockerd-rootless-setuptool.sh install
+loginctl enable-linger fluxuser
+systemctl --user enable docker.service
+systemctl --user start docker.service
+docker run hello-world
+
+git clone https://github.com/rootless-containers/usernetes ~/usernetes
+cd ~/usernetes
+echo "Usernetes is in $PWD"
+loginctl enable-linger $(whoami)
+loginctl enable-linger $USER
+EOF
+chmod +x ./docker-user-setup.sh
+cat docker-user-setup.sh
+su fluxuser ./docker-user-setup.sh
+
+echo "Done installing docker user"
 chown fluxuser /etc/flux/system/curve.cert
 touch /tmp/finished.txt
