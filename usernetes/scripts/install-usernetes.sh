@@ -91,11 +91,13 @@ EOF
 cat /etc/flux/system/broker.toml
 echo "DONE broker.toml"
 
-
 echo "Creating flux user"
 adduser --disabled-password --gecos "" fluxuser
 
-# control-plane or worker
+# Deny ssh access for flux user (just being conservative for now)
+echo "DenyUsers fluxuser" >> /etc/ssh/sshd_config
+systemctl restart sshd
+
 echo "Installing docker user"
 su fluxuser dockerd-rootless-setuptool.sh install
 
