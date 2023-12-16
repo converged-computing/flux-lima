@@ -11,3 +11,7 @@ chmod +x ./install-flux.sh
 chmod +x ./install-usernetes.sh
 /bin/bash ./install-flux.sh
 /bin/bash ./install-usernetes.sh
+
+# Start flux at the end!
+systemctl enable flux
+systemctl start flux
