@@ -40,6 +40,9 @@ sysctl -p
 systemctl daemon-reload
 echo "DONE modprobe"
 
+# Cut out here early to debug.
+exit 0
+
 echo "START kubectl"
 cd /tmp
 curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
