@@ -65,6 +65,12 @@ cd /opt/flux-security
 PYTHON=/opt/conda/bin/python ./configure --prefix=/usr --sysconfdir=/etc
 make && make install
 
+# Create the user that will run flux, "flux" with sudo access
+# ubuntu is already 1000, and flux user 1001, so flux is 1002
+groupadd -g 1002 flux 
+useradd -g flux -u 1002 -d /home/flux -m flux 
+printf "flux ALL= NOPASSWD: ALL\\n" >> /etc/sudoers
+
 # The VMs will share the same munge key
 mkdir -p /var/run/munge
 dd if=/dev/urandom bs=1 count=1024 > /etc/munge/munge.key

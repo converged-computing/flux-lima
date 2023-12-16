@@ -54,10 +54,9 @@ chmod +x install.sh
 echo "done installing docker"
 
 echo "START broker.toml"
-mkdir -p /etc/flux/system
-cat <<EOF | tee /etc/flux/system/broker.toml
+mkdir -p /etc/flux/system/conf.d /etc/flux/system/cron.d
+cat <<EOF | tee /etc/flux/system/conf.d/broker.toml
 # Flux needs to know the path to the IMP executable
-# Disabled for now, not signing jobs
 # [exec]
 # imp = "/usr/libexec/flux/flux-imp"
 
@@ -110,37 +109,42 @@ loginctl enable-linger fluxuser
 apt install -y systemd-container
 
 # This is an attempt to run a bunch of stuff as the fluxuser
-cat <<EOF | tee docker-user-setup.sh
+cat <<EOF | tee /home/fluxuser/docker-user-setup.sh
 #!/bin/bash
 ls /var/lib/systemd/linger
 . /home/fluxuser/.bashrc
 loginctl enable-linger fluxuser
 
 export XDG_RUNTIME_DIR=/home/fluxuser/.docker/run
+mkdir -p /home/fluxuser/.docker/run
 export DOCKER_HOST=unix:///home/fluxuser/.docker/run/docker.sock
 dockerd-rootless-setuptool.sh install
 sleep 10
 systemctl --user enable docker.service
 systemctl --user start docker.service
-docker run hello-world
-
-git clone https://github.com/rootless-containers/usernetes ~/usernetes
-cd ~/usernetes
-echo "Usernetes is in $PWD"
 
 # Not sure why this is happening, but it's starting here
 ln -s /run/user/1001/docker.sock /home/fluxuser/.docker/run/docker.sock
+
+docker run hello-world
+
+if [[ ! -d "/home/fluxuser/usernetes" ]]; then
+    git clone https://github.com/rootless-containers/usernetes ~/usernetes
+fi
+cd ~/usernetes
+echo "Usernetes is in ~/usernetes"
 EOF
-chmod +x ./docker-user-setup.sh
-cat docker-user-setup.sh
+chmod +x /home/fluxuser/docker-user-setup.sh
+cat /home/fluxuser/docker-user-setup.sh
 
 # We need to use this to run the script, otherwise
 # the docker service won't work, see linked issue above
-machinectl shell fluxuser@ /bin/bash /tmp/docker-user-setup.sh
+# This MUST be a full path
+machinectl shell fluxuser@ /bin/bash /home/fluxuser/docker-user-setup.sh
 
 # interactive shell
-# machinectl shell fluxuser@ /bin/bash /tmp/docker-user-setup.sh
+# machinectl shell fluxuser@
 
 echo "Done installing docker user"
-chown fluxuser /etc/flux/system/curve.cert
+chown flux /etc/flux/system/curve.cert
 touch /tmp/finished.txt
