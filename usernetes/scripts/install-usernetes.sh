@@ -40,9 +40,6 @@ sysctl -p
 systemctl daemon-reload
 echo "DONE modprobe"
 
-# Cut out here early to debug.
-exit 0
-
 echo "START kubectl"
 cd /tmp
 curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
@@ -105,17 +102,24 @@ echo "Setting up usernetes"
 echo "export PATH=/usr/bin:$PATH" >> /home/fluxuser/.bashrc
 echo "export XDG_RUNTIME_DIR=/home/fluxuser/.docker/run" >> /home/fluxuser/.bashrc
 echo "export DOCKER_HOST=unix:///home/fluxuser/.docker/run/docker.sock" >> /home/fluxuser/.bashrc
-sleep 10
 
 echo "Installing docker user"
+loginctl enable-linger fluxuser
+
+# https://github.com/docker/docs/issues/14491
+apt install -y systemd-container
 
 # This is an attempt to run a bunch of stuff as the fluxuser
 cat <<EOF | tee docker-user-setup.sh
 #!/bin/bash
-loginctl enable-linger fluxuser
+ls /var/lib/systemd/linger
 . /home/fluxuser/.bashrc
-dockerd-rootless-setuptool.sh install
 loginctl enable-linger fluxuser
+
+export XDG_RUNTIME_DIR=/home/fluxuser/.docker/run
+export DOCKER_HOST=unix:///home/fluxuser/.docker/run/docker.sock
+dockerd-rootless-setuptool.sh install
+sleep 10
 systemctl --user enable docker.service
 systemctl --user start docker.service
 docker run hello-world
@@ -123,12 +127,19 @@ docker run hello-world
 git clone https://github.com/rootless-containers/usernetes ~/usernetes
 cd ~/usernetes
 echo "Usernetes is in $PWD"
-loginctl enable-linger $(whoami)
-loginctl enable-linger $USER
+
+# Not sure why this is happening, but it's starting here
+ln -s /run/user/1001/docker.sock /home/fluxuser/.docker/run/docker.sock
 EOF
 chmod +x ./docker-user-setup.sh
 cat docker-user-setup.sh
-su fluxuser ./docker-user-setup.sh
+
+# We need to use this to run the script, otherwise
+# the docker service won't work, see linked issue above
+machinectl shell fluxuser@ /bin/bash /tmp/docker-user-setup.sh
+
+# interactive shell
+# machinectl shell fluxuser@ /bin/bash /tmp/docker-user-setup.sh
 
 echo "Done installing docker user"
 chown fluxuser /etc/flux/system/curve.cert
