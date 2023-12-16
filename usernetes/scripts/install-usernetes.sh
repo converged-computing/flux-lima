@@ -87,14 +87,14 @@ hosts = [
 [tbon]
 tcp_user_timeout = "2m"
 EOF
-cat /etc/flux/system/broker.toml
+cat /etc/flux/system/conf.d/broker.toml
 echo "DONE broker.toml"
 
 echo "Creating flux user"
 adduser --disabled-password --gecos "" fluxuser
 
 # Deny ssh access for flux user (just being conservative for now)
-echo "DenyUsers fluxuser" >> /etc/ssh/sshd_config
+echo "DenyUsers fluxuser flux" >> /etc/ssh/sshd_config
 systemctl restart sshd
 
 echo "Setting up usernetes"
