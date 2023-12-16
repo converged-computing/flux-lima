@@ -12,7 +12,7 @@ apt-get update
 apt-get install -y apt-transport-https ca-certificates curl clang llvm jq apt-utils wget
 apt-get install -y libelf-dev libpcap-dev libbfd-dev binutils-dev build-essential make 
 apt-get install -y linux-tools-common linux-tools-$(uname -r) 
-apt-get install -y bpfcc-tools python3-pip git
+apt-get install -y bpfcc-tools python3-pip git net-tools
 
 # cmake is needed for flux now!
 export CMAKE=3.23.1
@@ -77,9 +77,77 @@ dd if=/dev/urandom bs=1 count=1024 > /etc/munge/munge.key
 chown -R munge /etc/munge/munge.key /var/run/munge
 chmod 600 /etc/munge/munge.key
 
+# prepare flux.server
+# I sometimes have trouble with /run/ prefix (the directory doesn't create)
+# so I'm putting it in flux home
+
+cat <<EOF | tee /tmp/flux.service
+[Unit]
+Description=Flux message broker
+Wants=munge.service
+
+[Service]
+Type=notify
+NotifyAccess=main
+TimeoutStopSec=90
+KillMode=mixed
+ExecStart=/bin/bash -c '\\
+  XDG_RUNTIME_DIR=/run/user/\$UID \\
+  DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/\$UID/bus \\
+  /usr/bin/flux broker \\
+  --config-path=/etc/flux/system/conf.d \\
+  -Scron.directory=/etc/flux/system/cron.d \\
+  -Srundir=/home/flux/run/flux \\
+  -Sstatedir=\${STATE_DIRECTORY:-/var/lib/flux} \\
+  -Slocal-uri=local:///run/flux/local \\
+  -Slog-stderr-level=6 \\
+  -Slog-stderr-mode=local \\
+  -Sbroker.rc2_none \\
+  -Sbroker.quorum=1 \\
+  -Sbroker.quorum-timeout=none \\
+  -Sbroker.exit-norestart=42 \
+  -Sbroker.sd-notify=1 \\
+  -Scontent.restore=auto \\
+'
+SyslogIdentifier=flux
+ExecReload=/usr/bin/flux config reload
+Restart=always
+RestartSec=5s
+RestartPreventExitStatus=42
+SuccessExitStatus=42
+User=flux
+Group=flux
+RuntimeDirectory=flux
+RuntimeDirectoryMode=0755
+StateDirectory=flux
+StateDirectoryMode=0700
+PermissionsStartOnly=true
+ExecStartPre=/usr/bin/loginctl enable-linger flux
+ExecStartPre=bash -c 'systemctl start user@\$(id -u flux).service'
+
+#
+# Delegate cgroup control to user flux, so that systemd doesn't reset
+#  cgroups for flux initiated processes, and to allow (some) cgroup
+#  manipulation as user flux.
+#
+Delegate=yes
+
+[Install]
+WantedBy=multi-user.target
+EOF
+cat /tmp/flux.service
+
+# Make the flux run directory
+mkdir -p /home/flux/run/flux
+chown -R flux /home/flux
+
 # Flux core
 git clone https://github.com/flux-framework/flux-core /opt/flux-core
 cd /opt/flux-core
+
+# Use our updated flux service
+cp /tmp/flux.service ./etc/flux.service
+
 ./autogen.sh
 PYTHON=/opt/conda/bin/python PYTHON_PREFIX=PYTHON_EXEC_PREFIX=/opt/conda/lib/python3.8/site-packages ./configure --prefix=/usr --sysconfdir=/etc --with-flux-security
 make clean
@@ -101,3 +169,10 @@ wget -O /tmp/curve.cert https://gist.githubusercontent.com/vsoch/58cb5eeca8ac88d
 # flux keygen /tmp/curve.cert
 mkdir -p /etc/flux/system
 cp /tmp/curve.cert /etc/flux/system/curve.cert
+chown flux /etc/flux/system/curve.cert
+chmod o-r /etc/flux/system/curve.cert
+chmod g-r /etc/flux/system/curve.cert
+
+# /var/lib/flux needs to be owned by the instance owner
+mkdir -p /var/lib/flux
+chown -R flux /var/lib/flux
