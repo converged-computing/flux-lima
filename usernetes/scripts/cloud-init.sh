@@ -6,7 +6,7 @@ cp cspca.crt /usr/local/share/ca-certificates
 update-ca-certificates
 
 # Add other nodes to /etc/hosts, manual and not great, but will get the job done!
-# These are in ansible-hosts
+# These are in ubuntu-vars.yaml
 echo "192.168.65.121 u2204-01" >> /etc/hosts
 echo "192.168.65.122 u2204-02" >> /etc/hosts
 echo "192.168.65.123 u2204-03" >> /etc/hosts

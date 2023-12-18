@@ -75,7 +75,7 @@ curve_cert = "/etc/flux/system/curve.cert"
 # ubuntu does not have eth0
 default_port = 8050
 default_bind = "tcp://enp1s0:%p"
-default_connect = "tcp://%h.internal:%p"
+default_connect = "tcp://%h:%p"
 
 # Rank 0 is the TBON parent of all brokers unless explicitly set with
 # parent directives.
