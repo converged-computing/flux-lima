@@ -107,8 +107,8 @@ echo "export XDG_RUNTIME_DIR=/home/fluxuser/.docker/run" >> /home/fluxuser/.bash
 echo "export DOCKER_HOST=unix:///home/fluxuser/.docker/run/docker.sock" >> /home/fluxuser/.bashrc
 
 echo "export PATH=/usr/bin:$PATH" >> /home/flux/.bashrc
-echo "export XDG_RUNTIME_DIR=/home/fluxuser/.docker/run" >> /home/flux/.bashrc
-echo "export DOCKER_HOST=unix:///home/fluxuser/.docker/run/docker.sock" >> /home/flux/.bashrc
+echo "export XDG_RUNTIME_DIR=/home/flux/.docker/run" >> /home/flux/.bashrc
+echo "export DOCKER_HOST=unix:///home/flux/.docker/run/docker.sock" >> /home/flux/.bashrc
 
 echo "Installing docker user"
 loginctl enable-linger fluxuser
