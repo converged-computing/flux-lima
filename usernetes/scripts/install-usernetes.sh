@@ -99,12 +99,20 @@ echo "DenyUsers fluxuser flux" >> /etc/ssh/sshd_config
 systemctl restart sshd
 
 echo "Setting up usernetes"
+
+# Note I'm setting this up for flux and fluxuser
+# I think for our experiments we are good to use a single user instance (e.g., run as flux)
 echo "export PATH=/usr/bin:$PATH" >> /home/fluxuser/.bashrc
 echo "export XDG_RUNTIME_DIR=/home/fluxuser/.docker/run" >> /home/fluxuser/.bashrc
 echo "export DOCKER_HOST=unix:///home/fluxuser/.docker/run/docker.sock" >> /home/fluxuser/.bashrc
 
+echo "export PATH=/usr/bin:$PATH" >> /home/flux/.bashrc
+echo "export XDG_RUNTIME_DIR=/home/fluxuser/.docker/run" >> /home/flux/.bashrc
+echo "export DOCKER_HOST=unix:///home/fluxuser/.docker/run/docker.sock" >> /home/flux/.bashrc
+
 echo "Installing docker user"
 loginctl enable-linger fluxuser
+loginctl enable-linger flux
 
 # https://github.com/docker/docs/issues/14491
 apt install -y systemd-container
@@ -128,7 +136,6 @@ systemctl --user start docker.service
 
 # Not sure why this is happening, but it's starting here
 ln -s /run/user/1001/docker.sock /home/fluxuser/.docker/run/docker.sock
-
 docker run hello-world
 
 if [[ ! -d "/home/fluxuser/usernetes" ]]; then
@@ -140,10 +147,16 @@ EOF
 chmod +x /home/fluxuser/docker-user-setup.sh
 cat /home/fluxuser/docker-user-setup.sh
 
+# Prepare one for flux too
+cp /home/fluxuser/docker-user-setup.sh /home/flux/docker-user-setup.sh
+sed -i 's/fluxuser/flux/g' /home/flux/docker-user-setup.sh
+sed -i 's/1001/1002/g' /home/flux/docker-user-setup.sh
+
 # We need to use this to run the script, otherwise
 # the docker service won't work, see linked issue above
 # This MUST be a full path
 machinectl shell fluxuser@ /bin/bash /home/fluxuser/docker-user-setup.sh
+machinectl shell flux@ /bin/bash /home/flux/docker-user-setup.sh
 
 # interactive shell
 # machinectl shell fluxuser@
