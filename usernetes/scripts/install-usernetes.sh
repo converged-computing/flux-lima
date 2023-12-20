@@ -138,10 +138,15 @@ systemctl --user start docker.service
 ln -s /run/user/1001/docker.sock /home/fluxuser/.docker/run/docker.sock
 docker run hello-world
 
+# Clone usernetes, and also wget the scripts to start control plane and worker nodes
 if [[ ! -d "/home/fluxuser/usernetes" ]]; then
     git clone https://github.com/rootless-containers/usernetes ~/usernetes
+    cd ~/usernetes
+    wget https://raw.githubusercontent.com/converged-computing/flux-lima/main/usernetes/scripts/start-control-plane.sh
+    wget https://raw.githubusercontent.com/converged-computing/flux-lima/main/usernetes/scripts/start-worker.sh
+    chmod +x ./start-control-plane.sh
+    chmod +x ./start-worker.sh
 fi
-cd ~/usernetes
 echo "Usernetes is in ~/usernetes"
 EOF
 chmod +x /home/fluxuser/docker-user-setup.sh
