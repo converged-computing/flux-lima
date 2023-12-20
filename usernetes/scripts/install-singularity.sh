@@ -12,16 +12,8 @@ wget https://go.dev/dl/go1.21.0.linux-amd64.tar.gz
 tar -xvf go1.21.0.linux-amd64.tar.gz
 mv go /usr/local && rm go1.21.0.linux-amd64.tar.gz
 
-export PATH=/usr/local/go/bin:$PATH
-SINGULARITY_VERSION=4.0.1
-wget https://github.com/sylabs/singularity/releases/download/v${SINGULARITY_VERSION}/singularity-ce-${SINGULARITY_VERSION}.tar.gz
-tar -xzvf singularity-ce-${SINGULARITY_VERSION}.tar.gz
-cd singularity-ce-${SINGULARITY_VERSION}
-./mconfig -p /usr/local
-make -C builddir
-make -C builddir install
-cd ../
-rm -rf singularity-ce-${SINGULARITY_VERSION}
+wget https://github.com/sylabs/singularity/releases/download/v4.0.2/singularity-ce_4.0.2-jammy_amd64.deb
+dpkg -i singularity-ce_4.0.2-jammy_amd64.deb
 
 # Pull singularity down and put in flux home
 singularity pull docker://ghcr.io/rse-ops/lammps-mpich:tag-latest
