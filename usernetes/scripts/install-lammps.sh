@@ -27,3 +27,4 @@ cp -R /opt/lammps/examples/reaxff/HNS /home/flux/lammps
 cp -R /opt/lammps/examples/reaxff/HNS /home/fluxuser/lammps
 chown -R flux /home/flux/lammps
 chown -R fluxuser /home/fluxuser/lammps
+touch /tmp/lammps-finished.txt
