@@ -1,9 +1,6 @@
 #!/bin/bash
 
 # Install a "bare metal" lammps
-
-set -euo pipefail
-
 export DEBIAN_FRONTEND=noninteractive
 
 # Note we install to /usr so can be found by all users
