@@ -19,10 +19,11 @@ echo "nameserver 192.168.65.1" >> /etc/resolv.conf
 
 wget https://raw.githubusercontent.com/converged-computing/flux-lima/main/usernetes/scripts/install-flux.sh
 wget https://raw.githubusercontent.com/converged-computing/flux-lima/main/usernetes/scripts/install-usernetes.sh
-chmod +x ./install-flux.sh
-chmod +x ./install-usernetes.sh
-/bin/bash ./install-flux.sh
-/bin/bash ./install-usernetes.sh
+wget https://raw.githubusercontent.com/converged-computing/flux-lima/main/usernetes/scripts/install-lammps.sh
+for script in install-flux.sh install-usernetes.sh install-lammps.sh; do
+    chmod +x ./${script}
+    /bin/bash ./${script}
+done
 
 # Start flux at the end!
 systemctl enable flux
