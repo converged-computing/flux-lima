@@ -12,7 +12,7 @@ cd /opt/lammps
 mkdir build
 cd build
 . /etc/profile
-cmake ../cmake -D PKG_REAXFF=yes -D BUILD_MPI=yes -D PKG_OPT=yes -DFFT=FFTW3
+cmake ../cmake -D PKG_REAXFF=yes -D BUILD_MPI=yes -D PKG_OPT=yes
 make
 make install
 
