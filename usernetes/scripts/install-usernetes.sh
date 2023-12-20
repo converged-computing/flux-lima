@@ -57,8 +57,8 @@ echo "START broker.toml"
 mkdir -p /etc/flux/system/conf.d /etc/flux/system/cron.d
 cat <<EOF | tee /etc/flux/system/conf.d/broker.toml
 # Flux needs to know the path to the IMP executable
-# [exec]
-# imp = "/usr/libexec/flux/flux-imp"
+[exec]
+imp = "/usr/libexec/flux/flux-imp"
 
 # Allow users other than the instance owner (guests) to connect to Flux
 # Optionally, root may be given "owner privileges" for convenience

@@ -13,15 +13,18 @@ cmake ../cmake -D PKG_REAXFF=yes -D BUILD_MPI=yes -D PKG_OPT=yes
 make
 make install
 
-# where does it get installed to?
+# install to /usr/bin
 mv ./lmp /usr/bin/
-# which lmp
-# 
 
 # examples are in:
 # /opt/lammps/examples/reaxff/HNS
 cp -R /opt/lammps/examples/reaxff/HNS /home/flux/lammps
 cp -R /opt/lammps/examples/reaxff/HNS /home/fluxuser/lammps
+
+# clean up
+rm -rf /opt/lammps
+
+# permissions
 chown -R flux /home/flux/lammps
 chown -R fluxuser /home/fluxuser/lammps
 touch /tmp/lammps-finished.txt

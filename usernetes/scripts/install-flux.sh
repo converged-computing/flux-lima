@@ -112,6 +112,13 @@ chown flux /etc/flux/system/curve.cert
 chmod o-r /etc/flux/system/curve.cert
 chmod g-r /etc/flux/system/curve.cert
 
+# Permissions for imp
+chmod u+s /usr/libexec/flux/flux-imp
+chmod 4755 /usr/libexec/flux/flux-imp
+
 # /var/lib/flux needs to be owned by the instance owner
 mkdir -p /var/lib/flux
 chown -R flux /var/lib/flux
+
+# clean up
+rm -rf /opt/flux-core /opt/flux-sched /opt/prrte /opt/flux-security

@@ -17,12 +17,10 @@ echo "192.168.65.124 u2204-04" >> /etc/hosts
 echo "search llnl.gov" >> /etc/resolv.conf
 echo "nameserver 192.168.65.1" >> /etc/resolv.conf
 
-wget https://raw.githubusercontent.com/converged-computing/flux-lima/main/usernetes/scripts/install-flux.sh
-wget https://raw.githubusercontent.com/converged-computing/flux-lima/main/usernetes/scripts/install-usernetes.sh
-wget https://raw.githubusercontent.com/converged-computing/flux-lima/main/usernetes/scripts/install-lammps.sh
-for script in install-flux.sh install-usernetes.sh install-lammps.sh; do
-    chmod +x ./${script}
-    /bin/bash ./${script}
+for script in flux usernetes lammps singularity; do
+    wget https://raw.githubusercontent.com/converged-computing/flux-lima/main/usernetes/scripts/install-${script}.sh
+    chmod +x ./${script}.sh
+    /bin/bash ./${script}.sh
 done
 
 # Start flux at the end!
