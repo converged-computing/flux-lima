@@ -82,7 +82,7 @@ default_connect = "tcp://%h:%p"
 # The actual ip addresses (for both) need to be added to /etc/hosts
 # of each VM for now.
 hosts = [
-   { host = "u2204-0[1-4]" },
+   { host = "u2204-0[1-7]" },
 ]
 # Speed up detection of crashed network peers (system default is around 20m)
 [tbon]
