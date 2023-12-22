@@ -66,6 +66,12 @@ imp = "/usr/libexec/flux/flux-imp"
 allow-guest-user = true
 allow-root-owner = true
 
+# Point to resource definition generated with flux-R(1).
+# Uncomment to exclude nodes (e.g. mgmt, login), from eligibility to run jobs.
+[resource]
+path = "/etc/flux/system/R"
+exclude = "u2204-01"
+
 # Point to shared network certificate generated flux-keygen(1).
 # Define the network endpoints for Flux's tree based overlay network
 # and inform Flux of the hostnames that will start flux-broker(1).
@@ -93,6 +99,10 @@ echo "DONE broker.toml"
 
 echo "Creating flux user"
 adduser --disabled-password --gecos "" fluxuser
+
+echo "Creating flux resources"
+flux R encode --hosts="u2204-0[1-7]" --local > /etc/flux/system/R
+chown flux:flux /etc/flux/system/R
 
 # Deny ssh access for flux user (just being conservative for now)
 echo "DenyUsers fluxuser flux" >> /etc/ssh/sshd_config
