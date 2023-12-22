@@ -1,0 +1,18 @@
+apiVersion: flux-framework.org/v1alpha2
+kind: MiniCluster
+metadata:
+  name: flux-sample
+spec:
+  size: 6
+  tasks: 48
+  logging:
+    quiet: true
+  containers:
+    - image: ghcr.io/converged-computing/metric-lammps:latest
+      workingDir: /opt/lammps/examples/reaxff/HNS
+      command: lmp -v x 32 -v y 8 -v z 16 -in in.reaxc.hns -nocite
+      resources:
+        limits:
+          cpu: "7"
+        requests:
+          cpu: "7"
