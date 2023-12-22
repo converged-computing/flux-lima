@@ -1260,7 +1260,7 @@ spec:
     spec:
       # This is added to ensure we only schedule the flux operator on the control plane node
       nodeSelector:
-        kubernetes.io/hostname: u7s-u2204-01
+        experiment-role: operator-node
       containers:
       - args:
         - --secure-listen-address=0.0.0.0:8443
