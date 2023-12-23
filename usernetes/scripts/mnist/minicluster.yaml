@@ -6,5 +6,9 @@ spec:
   size: 6
   tasks: 48
   containers:
-  - image: vanessa/pytorch-mnist-cpu:usernetes
+  - image: vanessa/pytorch-mnist-cpu:usernetes@sha256:4c54a0f25a0905f42eb17ac3a150b7f7a6c8f0c09e73ae77c8132924e27c473a
     command: /bin/bash /launch.sh
+    batch: true
+    commands:
+      # Output gets saved here, we can cat to log
+      post: cat /tmp/fluxout/job-0.out
