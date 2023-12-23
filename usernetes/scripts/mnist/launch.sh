@@ -1,4 +1,5 @@
 #!/bin/bash
+log="${1}"
 job_name="flux-sample"
 job_port="8080"
 container="/home/flux/mnist/pytorch-mnist-cpu_latest.sif"
@@ -13,12 +14,12 @@ leader=${node_names[0]}
 echo "The leader broker is ${leader}"
 
 # Get the number of nodes
-nodes=$(echo "${#node_names[@]}")
+nodes=$(echo $nodenames | wc -l)
 echo "There are ${nodes} nodes in the cluster"
 
 # Get the task rank
 rank=0
-for host in "${node_names[@]}"
+for host in $(flux exec -r all hostname)
 do
    if [[ "${host}" == "$(hostname)" ]]; then
        echo "This is ${host} with rank ${rank}"
@@ -32,4 +33,4 @@ echo "I am hostname $(hostname) and rank ${rank} of ${nodes} nodes. The job is $
 # This will be parsed by the main.py to get the rank
 export LOCAL_RANK=${rank}
 
-time singularity exec ${container} torchrun --node_rank ${LOCAL_RANK} --nnodes ${nodes} --nproc_per_node 2 --master_addr ${leader} --master_port ${job_port} /home/flux/mnist/main.py
+time singularity exec ${container} torchrun --node_rank ${LOCAL_RANK} --nnodes ${nodes} --nproc_per_node 8 --master_addr ${leader} --master_port ${job_port} /home/flux/mnist/main.py
