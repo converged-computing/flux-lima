@@ -1,0 +1,10 @@
+apiVersion: flux-framework.org/v1alpha2
+kind: MiniCluster
+metadata:
+  name: flux-sample
+spec:
+  size: 6
+  tasks: 48
+  containers:
+  - image: vanessa/pytorch-mnist-cpu:usernetes
+    command: /bin/bash /launch.sh
