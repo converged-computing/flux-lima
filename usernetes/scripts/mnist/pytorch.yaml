@@ -1,0 +1,30 @@
+apiVersion: "kubeflow.org/v1"
+kind: "PyTorchJob"
+metadata:
+  name: "pytorch-dist-mnist-gloo"
+spec:
+  pytorchReplicaSpecs:
+    Master:
+      replicas: 1
+      restartPolicy: OnFailure
+      template:
+        metadata:
+          annotations:
+            sidecar.istio.io/inject: "false"
+        spec:
+          containers:
+            - name: pytorch
+              image: docker.io/kubeflowkatib/pytorch-mnist-cpu:latest@sha256:ea99a9efee9c0af7b598f63bdc203ea4387d7ac9da1d175f0641735fc88d6791
+              args: ["--backend", "gloo", "--epochs", "5"]
+    Worker:
+      replicas: 3
+      restartPolicy: OnFailure
+      template:
+        metadata:
+          annotations:
+            sidecar.istio.io/inject: "false"
+        spec:
+          containers: 
+            - name: pytorch
+              image: docker.io/kubeflowkatib/pytorch-mnist-cpu:latest@sha256:ea99a9efee9c0af7b598f63bdc203ea4387d7ac9da1d175f0641735fc88d6791
+              args: ["--backend", "gloo"]
