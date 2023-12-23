@@ -1,5 +1,5 @@
 #!/bin/bash
-log="${1}"
+
 job_name="flux-sample"
 job_port="8080"
 container="/home/flux/mnist/pytorch-mnist-cpu_latest.sif"
