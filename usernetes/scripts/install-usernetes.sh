@@ -36,10 +36,9 @@ echo "START modprobe"
 modprobe vxlan
 systemctl daemon-reload
 
-# These are extra ports for the docker-compose.yaml, but they seem to break it
-# echo "net.ipv4.ip_unprivileged_port_start=443" | tee -a /etc/sysctl.conf
-# echo "net.ipv4.ip_unprivileged_port_start=80" | tee -a /etc/sysctl.conf 
-# echo "net.ipv4.ip_unprivileged_port_start=8080" | tee -a /etc/sysctl.conf
+# I'm sure this is a very bad idea
+# https://github.com/rootless-containers/rootlesskit/blob/master/docs/port.md#exposing-privileged-ports
+echo "net.ipv4.ip_unprivileged_port_start=0" | tee -a /etc/sysctl.conf
 echo "net.ipv4.conf.default.rp_filter=2" | tee -a /etc/sysctl.conf
 
 sysctl -p
