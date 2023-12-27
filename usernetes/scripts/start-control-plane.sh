@@ -11,6 +11,10 @@ cd ~/usernetes
 # We will need to get this for certs for all nodes
 curl https://www-csp.llnl.gov/content/assets/csoc/cspca.crt > cspca.crt
 
+# Replace docker-compose.yaml with ours that has added ports
+rm docker-compose.yaml
+wget https://raw.githubusercontent.com/converged-computing/flux-lima/main/usernetes/scripts/docker-compose.yaml
+
 # This is logic for the lead broker (we assume this one)
 make up
 docker exec -it usernetes-node-1 cp ./cspca.crt /usr/local/share/ca-certificates

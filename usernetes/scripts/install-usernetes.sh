@@ -35,7 +35,13 @@ echo "DONE 99-usernetes.conf"
 echo "START modprobe"
 modprobe vxlan
 systemctl daemon-reload
+
+# These are extra ports for the docker-compose.yaml
+echo "net.ipv4.ip_unprivileged_port_start=443" | tee -a /etc/sysctl.conf
+echo "net.ipv4.ip_unprivileged_port_start=80" | tee -a /etc/sysctl.conf 
+echo "net.ipv4.ip_unprivileged_port_start=8080" | tee -a /etc/sysctl.conf
 echo "net.ipv4.conf.default.rp_filter=2" | tee -a /etc/sysctl.conf
+
 sysctl -p
 systemctl daemon-reload
 echo "DONE modprobe"
