@@ -6,7 +6,9 @@ spec:
   size: 6
   tasks: 48
   containers:
-  - image: vanessa/pytorch-mnist-cpu:usernetes@sha256:4c54a0f25a0905f42eb17ac3a150b7f7a6c8f0c09e73ae77c8132924e27c473a
+    # This is built from the container here
+    # docker build -t vanessa/pytorch-mnist-cpu:usernetes .
+  - image: vanessa/pytorch-mnist-cpu:usernetes@sha256:7473cf87f281079a0efb397b21841d6f654332bc7f837e915ff9a7c3ae9fbb51
     command: /bin/bash /launch.sh
     batch: true
     commands:
