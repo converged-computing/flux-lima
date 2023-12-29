@@ -1289,7 +1289,7 @@ spec:
         command:
         - /manager
         # https://github.com/flux-framework/flux-operator/pkgs/container/flux-operator/158321305?tag=refactor-0-2-0
-        image: ghcr.io/flux-framework/flux-operator:refactor-0-2-0@sha256:6206e74ab2c22d1b8efe30d0b9b696c8ead69eb70a2b32d41cefb2686e4acdc8
+        image: ghcr.io/flux-framework/flux-operator:refactor-0-2-0@sha256:0ef36969ade01a64418c747d3f858ea179a45b73d0dce8e5c0dfdcb4a04e7a0b
         imagePullPolicy: Always
         livenessProbe:
           httpGet:
