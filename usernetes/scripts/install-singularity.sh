@@ -24,6 +24,7 @@ cd /home/flux/mnist
 singularity pull docker://kubeflowkatib/pytorch-mnist-cpu:latest 
 wget https://raw.githubusercontent.com/converged-computing/flux-lima/main/usernetes/scripts/mnist/main.py
 wget https://raw.githubusercontent.com/converged-computing/flux-lima/main/usernetes/scripts/mnist/launch.sh
+wget https://raw.githubusercontent.com/converged-computing/flux-lima/main/usernetes/scripts/mnist/mnist.sh
 
 chown -R flux /home/flux/mnist
 chown flux /home/flux/lammps/lammps-mpich_tag-latest.sif

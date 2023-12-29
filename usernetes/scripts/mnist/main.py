@@ -21,8 +21,9 @@ handler.setFormatter(formatter)
 root.handlers.clear()
 root.addHandler(handler)
 
-NUM_EPOCHS = 8   # number of training passes over the training dataset
-BATCH_SIZE = 128 # dataset batch size; each batch gets evenly distributed across hosts and local devices per host
+# This assumes 1 epoch, 8 cores per each of 6 nodes (this was originally 8 and 128)
+NUM_EPOCHS = 1   # number of training passes over the training dataset
+BATCH_SIZE = 48 # dataset batch size; each batch gets evenly distributed across hosts and local devices per host
 
 class MLP(nn.Module):
     def __init__(self, num_classes):
