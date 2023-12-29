@@ -4,7 +4,9 @@
 # Get the number of nodes (I think JOB_COMPLETIONS would work here)
 job_port="8080"
 nodes=6
-leader=flux-sample-0
+
+# This is the job name, index, service name, and namespace (default)
+leader="flux-sample-0.flux-service.default.svc.cluster.local"
 
 echo "The leader broker is ${leader}"
 rank=${JOB_COMPLETION_INDEX}

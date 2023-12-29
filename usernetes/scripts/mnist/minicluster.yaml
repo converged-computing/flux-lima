@@ -4,8 +4,10 @@ metadata:
   name: flux-sample
 spec:
   size: 6
+  # We set tasks explicitly to 0 to get -N 6 for the submit command
+  tasks: 0
   containers:
     # This is built from the container here
     # docker build -t vanessa/pytorch-mnist-cpu:usernetes .
-  - image: vanessa/pytorch-mnist-cpu:usernetes@sha256:7473cf87f281079a0efb397b21841d6f654332bc7f837e915ff9a7c3ae9fbb51
+  - image: vanessa/pytorch-mnist-cpu:usernetes@sha256:255c6722bbd324165a2d9d2d8ca933910ec0928a64faac09737ba7511a1ed0d8
     command: /bin/bash /launch.sh
