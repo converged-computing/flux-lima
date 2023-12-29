@@ -3,8 +3,8 @@ kind: MiniCluster
 metadata:
   name: flux-sample
 spec:
-  size: 6
-  # We set tasks explicitly to 0 to get -N 6 for the submit command
+  size: 1
+  # We set tasks explicitly to 0 to get -N 1 for the submit command
   tasks: 0
   containers:
     # This is built from the container here
