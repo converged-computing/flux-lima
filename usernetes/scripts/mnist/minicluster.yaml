@@ -9,5 +9,5 @@ spec:
   containers:
     # This is built from the container here
     # docker build -t vanessa/pytorch-mnist-cpu:usernetes .
-  - image: vanessa/pytorch-mnist-cpu:usernetes@sha256:255c6722bbd324165a2d9d2d8ca933910ec0928a64faac09737ba7511a1ed0d8
+  - image: vanessa/pytorch-mnist-cpu:usernetes@sha256:e1943ec68aaeb79c06017035abbe5d7bb5c7e4a4e28f39aac4b1d450396f744c
     command: /bin/bash /launch.sh
