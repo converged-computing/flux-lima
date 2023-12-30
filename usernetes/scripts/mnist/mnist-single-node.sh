@@ -1,7 +1,8 @@
 #!/bin/bash
 
-# This is updated to use a more modern mnist script with 10 epochs, and just on one node.
-# Since we don't distribute, we don't need torchrun
+# This is updated to use a more modern mnist script with 5 epochs, and just on one node.
+# Since we don't distribute, we don't need torchrun (the entire thing takes just over 2 minutes each)
+# and it could be longer in usernetes
 
 job_name="flux-sample"
 job_port="8080"
@@ -17,4 +18,4 @@ if [[ ! -f "/home/flux/mnist/main-single.py" ]]; then
     wget -O /home/flux/mnist/main-single.py https://raw.githubusercontent.com/pytorch/examples/main/mnist/main.py
     chmod +x /home/flux/mnist/main-single.py
 fi
-time singularity exec ${container} python3 /home/flux/mnist/main-single.py
+time singularity exec ${container} python3 /home/flux/mnist/main-single.py --epochs 5
