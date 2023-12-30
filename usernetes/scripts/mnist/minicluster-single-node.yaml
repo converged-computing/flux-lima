@@ -8,8 +8,8 @@ spec:
   tasks: 0
   containers:
     # This is built from the container here
-    # docker build -t vanessa/pytorch-mnist-cpu:usernetes .
-  - image: vanessa/pytorch-mnist-cpu:usernetes@sha256:e1943ec68aaeb79c06017035abbe5d7bb5c7e4a4e28f39aac4b1d450396f744c
+    # docker build -f Dockerfile.single-node -t vanessa/pytorch-mnist-cpu:usernetes-single-node .
+  - image: vanessa/pytorch-mnist-cpu:usernetes-single-node@sha256:5539369c451945d406403571fedb96242dd6d138598fa2c9ec35e24c50643925
     command: /bin/bash /launch.sh
     resources:
       limits:
