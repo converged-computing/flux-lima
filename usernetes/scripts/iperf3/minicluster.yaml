@@ -1,0 +1,19 @@
+apiVersion: flux-framework.org/v1alpha2
+kind: MiniCluster
+metadata:
+  name: flux-sample
+spec:
+  size: 6
+  interactive: true
+  containers:
+  - image: rockylinux:9
+    commands: 
+      pre: |
+        dnf update && dnf install -y iperf3 wget 
+        wget --no-cache -O run_iperf.sh https://raw.githubusercontent.com/converged-computing/flux-lima/main/usernetes/scripts/iperf3/run_iperf3.sh
+        chmod +x run_iperf.sh
+    resources:
+      limits:
+        cpu: "7"
+      requests:
+        cpu: "7"
