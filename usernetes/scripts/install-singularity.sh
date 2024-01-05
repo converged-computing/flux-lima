@@ -6,7 +6,8 @@ apt-get update && apt-get install -y libseccomp-dev libglib2.0-dev cryptsetup \
    squashfs-tools \
    squashfs-tools-ng \
    uidmap \
-   zlib1g-dev
+   zlib1g-dev \
+   iperf3
 
 wget https://go.dev/dl/go1.21.0.linux-amd64.tar.gz
 tar -xvf go1.21.0.linux-amd64.tar.gz

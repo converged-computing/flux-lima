@@ -1,6 +1,6 @@
 # Flux eBPF
 
-This is for flux alongside eBPF.
+This is for flux alongside eBPF. We will also do other tutorials and learning here.
  
 ## Usage
 
