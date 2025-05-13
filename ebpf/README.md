@@ -11,22 +11,16 @@ limactl start --network=lima:user-v2 --name=flux-ebpf ./flux-ebpf.yaml
 It says it doesn't reach running status, but I don't see any errors in the logs, and the shell works:
 
 ```bash
-limactl shell flux-lima
+limactl shell flux-ebpf
 export PATH=/opt/conda/bin:$PATH
-```
-
-And then try flux.
-
-```bash
-export PATH=/opt/conda/bin:$PATH
-$ flux start --test-size=4
-$ flux run hostname
-lima-flux-lima
 ```
 
 ### Testing ebpf
 
 I'm watching [this talk](https://www.youtube.com/watch?v=uBqRv8bDroc) and want to experiment with running some of the ebf tools.
+
+#### Python
+
 
 #### Count Number of System Calls
 
@@ -108,6 +102,7 @@ perf_event_open({type=PERF_TYPE_TRACEPOINT, size=0 /* PERF_ATTR_SIZE_??? */, con
 ioctl(7, PERF_EVENT_IOC_SET_BPF, 9)     = 0
 ioctl(7, PERF_EVENT_IOC_ENABLE, 0)      = 0
 ```
+
 #### libbpfgo
 
 Let's test out the go wrapper.
